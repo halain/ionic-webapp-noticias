@@ -1,6 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { Article } from '../../interfaces/interfaces';
-import { ActionSheetController } from '@ionic/angular';
+import { ActionSheetController, Platform } from '@ionic/angular';
 
 //plugins
 import { InAppBrowser } from '@ionic-native/in-app-browser/ngx';
@@ -21,7 +21,8 @@ export class NoticiaComponent implements OnInit {
   constructor(private iab: InAppBrowser,
               private actionSheetController: ActionSheetController,
               private socialSharing: SocialSharing,
-              private dataLocalService: DataLocalService) { }
+              private dataLocalService: DataLocalService,
+              private platform: Platform) { }
 
   ngOnInit() {}
 
@@ -67,12 +68,7 @@ export class NoticiaComponent implements OnInit {
         cssClass: 'action-dark',
         handler: () => {
           console.log('Share clicked');
-          this.socialSharing.share(
-            this.noticia.title,
-            this.noticia.source.name,
-            '',
-            this.noticia.url
-          );
+          this.compartirNoticia();
         }
       }, 
       guardarBorrarBoton,
@@ -87,6 +83,37 @@ export class NoticiaComponent implements OnInit {
       }]
     });
     await actionSheet.present();
+  }
+
+
+  //Logica para decidir si utilizar el plugin del socialShare cuando esta en una app o el Share-Api cuando es desde el navegador
+  compartirNoticia(){
+
+    if (this.platform.is('capacitor') || this.platform.is('cordova')){
+      //para cordoba app movil
+      this.socialSharing.share(
+        this.noticia.title,
+        this.noticia.source.name,
+        '',
+        this.noticia.url
+      );
+    } else{ 
+      //si el navegador web soporta el share
+      if (navigator.share) {
+        navigator.share({
+          title: this.noticia.title,
+          text: this.noticia.description,
+          url: this.noticia.url,
+        })
+        .then(() => console.log('Successful share'))
+        .catch((error) => console.log('Error sharing', error));
+      } else{
+        console.log('No se puede compartir, share no soportado por el navegador');
+        
+      }
+    }
+
+   
   }
   
 
